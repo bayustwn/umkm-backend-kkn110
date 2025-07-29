@@ -188,6 +188,7 @@ export const getAllNews = async (c: Context) => {
     return c.json(
       {
         message: "Gagal mendapatkan berita",
+        error : error
       },
       404
     );
