@@ -6,10 +6,12 @@ import { cors } from 'hono/cors';
 import userRouter from './router/userRouter';
 import dashboardRouter from './router/dashboardRouter';
 import { errorHandler } from './middleware/errorHandler';
+import { rateLimiter } from './middleware/rateLimiter';
 
 const app = new Hono();
 
 app.use(cors());
+app.use(rateLimiter(100, 60_000)); // 100 requests per minute
 
 app.get('/', (c) => {
   return c.text("Hello Bayu!, how's your day?");
