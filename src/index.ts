@@ -11,7 +11,7 @@ import { rateLimiter } from './middleware/rateLimiter';
 const app = new Hono();
 
 app.use(cors());
-app.use(rateLimiter(100, 60_000)); // 100 requests per minute
+app.use(rateLimiter(100, 60_000));
 
 app.get('/', (c) => {
   return c.text("Hello Bayu!, how's your day?");
