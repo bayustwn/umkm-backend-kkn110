@@ -11,7 +11,7 @@ const userSchema = z.object({
 
 export const login = async (c: Context) => {
   try {
-    const body = await c.req.json(); 
+    const body = await c.req.json();
     const { username, password } = await userSchema.parseAsync(body);
 
     const user = await prisma.user.findFirst({
@@ -25,16 +25,9 @@ export const login = async (c: Context) => {
     const payload = { id: user.id };
     const token = await sign(payload, `${Bun.env.SECRET_KEY}`, "HS256");
 
-    return c.json({
-      token,
-      message: "Berhasil login",
-    }, 200);
-    
-  } catch (error) {
-    console.error(error);
-    return c.json({
-      message: "Gagal Login",
-    }, 500);
+    return c.json({ token, message: "Berhasil login" }, 200);
+  } catch {
+    return c.json({ message: "Gagal Login" }, 500);
   }
 };
 
@@ -49,42 +42,26 @@ export const getUserInfo = async (c: Context) => {
     });
 
     if (!user) {
-      return c.json({ 
-        message: "Data admin tidak ditemukan",
-        data: {
-          telp: "085156203867",
-          email: "manukan.wetan@gmail.com", 
-          instagram: "manukan_wetan"
-        }
-      }, 404);
+      return c.json({ message: "Data admin tidak ditemukan" }, 404);
     }
 
     return c.json({
       message: "Berhasil mengambil data admin",
       data: {
-        telp: user.telp ,
-        email: user.email ,
-        instagram: user.instagram
-      }
+        telp: user.telp,
+        email: user.email,
+        instagram: user.instagram,
+      },
     }, 200);
-    
-  } catch (error) {
-    console.error(error);
-    return c.json({
-      message: "Gagal mengambil data admin",
-      data: {
-        telp: "085156203867",
-        email: "manukan.wetan@gmail.com",
-        instagram: "manukan_wetan"
-      }
-    }, 500);
+  } catch {
+    return c.json({ message: "Gagal mengambil data admin" }, 500);
   }
 };
 
 export const updateUser = async (c: Context) => {
   try {
     const body = await c.req.json();
-    
+
     const updateSchema = z.object({
       telp: z.string().optional(),
       email: z.string().email().optional(),
@@ -94,16 +71,16 @@ export const updateUser = async (c: Context) => {
     });
 
     const { telp, email, instagram, currentPassword, newPassword } = await updateSchema.parseAsync(body);
-    
+
     const currentUser = c.get("user");
-    
+
     if (newPassword && currentPassword) {
       if (!compareSync(currentPassword, currentUser.password)) {
         return c.json({ message: "Password saat ini salah!" }, 400);
       }
     }
 
-    const updateData: any = {};
+    const updateData: Record<string, string> = {};
     if (telp !== undefined) updateData.telp = telp;
     if (email !== undefined) updateData.email = email;
     if (instagram !== undefined) updateData.instagram = instagram;
@@ -123,15 +100,8 @@ export const updateUser = async (c: Context) => {
       },
     });
 
-    return c.json({
-      message: "Profil berhasil diperbarui!",
-      data: updatedUser,
-    }, 200);
-    
-  } catch (error) {
-    console.error(error);
-    return c.json({
-      message: "Gagal memperbarui profil",
-    }, 500);
+    return c.json({ message: "Profil berhasil diperbarui!", data: updatedUser }, 200);
+  } catch {
+    return c.json({ message: "Gagal memperbarui profil" }, 500);
   }
 };

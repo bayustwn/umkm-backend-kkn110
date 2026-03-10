@@ -11,9 +11,7 @@ export const verifyToken = (admin: boolean) => {
     return async (ctx: Context, next: Next) => {
         const token = ctx.req.header("authorization")?.split(" ")[1];
         if (!token) {
-            return ctx.json({
-                messaage : "Token tidak valid!"
-            },401)
+            return ctx.json({ message: "Token tidak valid!" }, 401);
         }
 
         try {
@@ -25,17 +23,13 @@ export const verifyToken = (admin: boolean) => {
             });
 
             if (!user) {
-                return ctx.json({
-                messaage : "Token tidak valid!"
-            },401)
+                return ctx.json({ message: "Token tidak valid!" }, 401);
             }
 
             ctx.set("user", user);
             await next();
-        } catch (error) {
-            return ctx.json({
-                messaage : "Server Error"
-            },500)
+        } catch {
+            return ctx.json({ message: "Server Error" }, 500);
         }
     };
 };
