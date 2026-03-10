@@ -7,7 +7,7 @@ const jwtPayloadSchema = z.object({
     id: z.string(),
 });
 
-export const verifyToken = (admin: boolean) => {
+export const verifyToken = (_admin: boolean) => {
     return async (ctx: Context, next: Next) => {
         const token = ctx.req.header("authorization")?.split(" ")[1];
         if (!token) {
