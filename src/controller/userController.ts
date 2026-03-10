@@ -1,18 +1,13 @@
 import { Context } from "hono";
 import prisma from "../prisma/prisma";
-import z from "zod";
 import { compareSync, hashSync } from "bcrypt-ts";
 import { sign } from "hono/jwt";
 import { AppError } from "../middleware/errorHandler";
-
-const userSchema = z.object({
-  username: z.string(),
-  password: z.string().min(5),
-});
+import { loginSchema, updateUserSchema } from "../schemas";
 
 export const login = async (c: Context) => {
   const body = await c.req.json();
-  const { username, password } = await userSchema.parseAsync(body);
+  const { username, password } = await loginSchema.parseAsync(body);
 
   const user = await prisma.user.findFirst({ where: { username } });
 
@@ -41,16 +36,7 @@ export const getUserInfo = async (c: Context) => {
 
 export const updateUser = async (c: Context) => {
   const body = await c.req.json();
-
-  const updateSchema = z.object({
-    telp: z.string().optional(),
-    email: z.string().email().optional(),
-    instagram: z.string().optional(),
-    currentPassword: z.string().optional(),
-    newPassword: z.string().min(5).optional(),
-  });
-
-  const { telp, email, instagram, currentPassword, newPassword } = await updateSchema.parseAsync(body);
+  const { telp, email, instagram, currentPassword, newPassword } = await updateUserSchema.parseAsync(body);
   const currentUser = c.get("user");
 
   if (newPassword && currentPassword) {

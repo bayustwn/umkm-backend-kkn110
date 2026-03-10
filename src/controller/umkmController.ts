@@ -2,25 +2,23 @@ import { Context } from "hono";
 import prisma from "../prisma/prisma";
 import { uploadToStorage, deleteFromStorage } from "../utils/storage";
 import { AppError } from "../middleware/errorHandler";
+import { umkmSchema, productSchema, updateProductSchema, categorySchema } from "../schemas";
 
 export const registerUMKM = async (c: Context) => {
   const body = await c.req.parseBody();
   const file = body['image'] as File;
-  const name = body['name'] as string;
-  const address = body['address'] as string;
-  const phone = body['phone'] as string;
-  const description = body['description'] as string;
-  const status = body['status'] as string | 'pending';
-  const latitude = body['latitude'] ? parseFloat(body['latitude'] as string) : undefined;
-  const longitude = body['longitude'] ? parseFloat(body['longitude'] as string) : undefined;
-  const categoryId = body['categoryId'] as string;
+  const parsed = await umkmSchema.parseAsync({
+    name: body['name'], address: body['address'], phone: body['phone'],
+    description: body['description'], status: body['status'],
+    categoryId: body['categoryId'], latitude: body['latitude'], longitude: body['longitude'],
+  });
 
   if (!file) throw new AppError(400, 'File gambar UMKM tidak ada!');
 
   const imageUrl = await uploadToStorage(file);
 
   const umkm = await prisma.umkm.create({
-    data: { id: crypto.randomUUID(), name, address, phone, description, status, image: imageUrl, latitude, longitude, categoryId },
+    data: { id: crypto.randomUUID(), ...parsed, image: imageUrl },
   });
 
   return c.json({ message: "UMKM berhasil didaftarkan!", data: umkm }, 200);
@@ -118,7 +116,7 @@ export const deleteUMKM = async (c: Context) => {
 
   const existingUmkm = await prisma.umkm.findUnique({
     where: { id },
-    include: { product: true }
+    include: { product: true },
   });
 
   if (!existingUmkm) throw new AppError(404, 'UMKM tidak ditemukan!');
@@ -159,15 +157,13 @@ export const getAllCategory = async (c: Context) => {
 
 export const addCategory = async (c: Context) => {
   const body = await c.req.json();
-  const { name } = body;
+  const parsed = await categorySchema.parseAsync(body);
 
-  if (!name || name.trim() === '') throw new AppError(400, 'Nama kategori tidak boleh kosong!');
-
-  const existingCategory = await prisma.category.findFirst({ where: { name: name.trim() } });
+  const existingCategory = await prisma.category.findFirst({ where: { name: parsed.name } });
   if (existingCategory) throw new AppError(400, 'Kategori dengan nama tersebut sudah ada!');
 
   const category = await prisma.category.create({
-    data: { id: crypto.randomUUID(), name: name.trim() },
+    data: { id: crypto.randomUUID(), name: parsed.name },
   });
 
   return c.json({ message: "Kategori berhasil ditambahkan!", data: category }, 201);
@@ -178,7 +174,7 @@ export const deleteCategory = async (c: Context) => {
 
   const existingCategory = await prisma.category.findUnique({
     where: { id },
-    include: { umkm: true }
+    include: { umkm: true },
   });
 
   if (!existingCategory) throw new AppError(404, 'Kategori tidak ditemukan!');
@@ -206,14 +202,10 @@ export const getDetailUmkm = async (c: Context) => {
 
 export const uploadProduct = async (c: Context) => {
   const body = await c.req.parseBody();
-  const umkmId = body['umkmId'] as string;
-  const name = body['name'] as string;
-  const description = body['description'] as string | undefined;
-  const price = typeof body['price'] === 'string' ? parseFloat(body['price']) : undefined;
-
-  if (!umkmId || !name || price === undefined) {
-    throw new AppError(400, 'umkmId, name, dan price wajib diisi!');
-  }
+  const parsed = await productSchema.parseAsync({
+    umkmId: body['umkmId'], name: body['name'],
+    description: body['description'], price: body['price'],
+  });
 
   let imageUrl = null;
   if (body['image'] && body['image'] instanceof File) {
@@ -221,7 +213,7 @@ export const uploadProduct = async (c: Context) => {
   }
 
   const product = await prisma.product.create({
-    data: { id: crypto.randomUUID(), name, description, image: imageUrl, price, umkmId },
+    data: { id: crypto.randomUUID(), name: parsed.name, description: parsed.description, image: imageUrl, price: parsed.price, umkmId: parsed.umkmId },
   });
 
   return c.json({ message: 'Produk berhasil diupload!', data: product }, 200);
@@ -234,15 +226,13 @@ export const updateUMKM = async (c: Context) => {
   const existingUmkm = await prisma.umkm.findUnique({ where: { id }, include: { product: true } });
   if (!existingUmkm) throw new AppError(404, 'UMKM tidak ditemukan!');
 
-  const name = body['name'] as string;
-  const address = body['address'] as string;
-  const phone = body['phone'] as string;
-  const description = body['description'] as string;
-  const categoryId = body['categoryId'] as string;
-  const latitude = body['latitude'] ? parseFloat(body['latitude'] as string) : undefined;
-  const longitude = body['longitude'] ? parseFloat(body['longitude'] as string) : undefined;
-  const file = body['image'] as File;
+  const parsed = await umkmSchema.parseAsync({
+    name: body['name'], address: body['address'], phone: body['phone'],
+    description: body['description'], status: existingUmkm.status,
+    categoryId: body['categoryId'], latitude: body['latitude'], longitude: body['longitude'],
+  });
 
+  const file = body['image'] as File;
   let imageUrl = existingUmkm.image;
 
   if (file && file instanceof File) {
@@ -254,7 +244,7 @@ export const updateUMKM = async (c: Context) => {
 
   const updatedUmkm = await prisma.umkm.update({
     where: { id },
-    data: { name, address, phone, description, categoryId, latitude, longitude, image: imageUrl },
+    data: { ...parsed, image: imageUrl },
   });
 
   return c.json({ message: "UMKM berhasil diperbarui!", data: updatedUmkm }, 200);
@@ -267,11 +257,11 @@ export const updateProduct = async (c: Context) => {
   const existingProduct = await prisma.product.findUnique({ where: { id } });
   if (!existingProduct) throw new AppError(404, 'Produk tidak ditemukan!');
 
-  const name = body['name'] as string;
-  const description = body['description'] as string;
-  const price = body['price'] as string;
-  const file = body['image'] as File;
+  const parsed = await updateProductSchema.parseAsync({
+    name: body['name'], description: body['description'], price: body['price'],
+  });
 
+  const file = body['image'] as File;
   let imageUrl = existingProduct.image;
 
   if (file && file instanceof File) {
@@ -283,7 +273,7 @@ export const updateProduct = async (c: Context) => {
 
   const updatedProduct = await prisma.product.update({
     where: { id },
-    data: { name, description, price: parseFloat(price), image: imageUrl },
+    data: { name: parsed.name, description: parsed.description, price: parsed.price, image: imageUrl },
   });
 
   return c.json({ message: "Produk berhasil diperbarui!", data: updatedProduct }, 200);

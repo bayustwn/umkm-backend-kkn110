@@ -2,19 +2,19 @@ import { Context } from "hono";
 import prisma from "../prisma/prisma";
 import { uploadToStorage, deleteFromStorage } from "../utils/storage";
 import { AppError } from "../middleware/errorHandler";
+import { newsSchema } from "../schemas";
 
 export const uploadNews = async (c: Context) => {
   const body = await c.req.parseBody();
   const file = body['image'] as File;
-  const title = body['title'] as string;
-  const content = body['content'] as string;
+  const parsed = await newsSchema.parseAsync({ title: body['title'], content: body['content'] });
 
   if (!file) throw new AppError(400, 'File tidak ada!');
 
   const imageUrl = await uploadToStorage(file);
 
   const news = await prisma.news.create({
-    data: { id: crypto.randomUUID(), title, content, image: imageUrl },
+    data: { id: crypto.randomUUID(), title: parsed.title, content: parsed.content, image: imageUrl },
     select: { id: true, title: true, content: true, image: true, created_at: true },
   });
 
@@ -42,13 +42,11 @@ export const getDetailNews = async (c: Context) => {
 
 export const getPreviewNews = async (c: Context) => {
   const news = await prisma.news.findMany({ take: 6 });
-
   return c.json({ message: "Berhasil mendapatkan berita", data: news }, 200);
 };
 
 export const getAllNews = async (c: Context) => {
   const news = await prisma.news.findMany({});
-
   return c.json({ message: "Berhasil mendapatkan berita", data: news }, 200);
 };
 
@@ -69,8 +67,7 @@ export const deleteNews = async (c: Context) => {
 export const editNews = async (c: Context) => {
   const id = c.req.param('id');
   const body = await c.req.parseBody();
-  const title = body['title'] as string;
-  const content = body['content'] as string;
+  const parsed = await newsSchema.parseAsync({ title: body['title'], content: body['content'] });
   const file = body['image'] as File | undefined;
 
   const news = await prisma.news.findUnique({ where: { id } });
@@ -86,7 +83,7 @@ export const editNews = async (c: Context) => {
 
   const updated = await prisma.news.update({
     where: { id },
-    data: { title, content, image: imageUrl },
+    data: { title: parsed.title, content: parsed.content, image: imageUrl },
     select: { id: true, title: true, content: true, image: true, created_at: true },
   });
 
