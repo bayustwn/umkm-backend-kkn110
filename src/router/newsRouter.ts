@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { getAllNews, getDetailNews, getOtherNews, getPreviewNews, uploadNews, deleteNews, editNews } from "../controller/newsController";
-import { verifyToken } from "../middleware/isLogin";
+import { verifyToken } from "../middleware/auth";
 
 const news = new Hono();
 

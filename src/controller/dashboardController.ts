@@ -25,7 +25,7 @@ export const getDashboard = async (c: Context) => {
       });
       return {
         ...u,
-        hargaTermurah: result._min.price ? Number(result._min.price) : null,
+        lowestPrice: result._min.price ? Number(result._min.price) : null,
       };
     })
   );

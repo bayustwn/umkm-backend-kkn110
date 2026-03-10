@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { getPreviewUmkm, getAllUmkm, getAllUmkmAdmin, getAllCategory, addCategory, deleteCategory, getDetailUmkm, getOtherUmkm, registerUMKM, uploadProduct, updateUMKM, updateProduct, deleteUMKM, approveUMKM } from '../controller/umkmController';
-import { verifyToken } from '../middleware/isLogin';
+import { verifyToken } from '../middleware/auth';
 
 const umkmRouter = new Hono();
 

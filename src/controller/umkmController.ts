@@ -27,9 +27,9 @@ export const registerUMKM = async (c: Context) => {
 export const getOtherUmkm = async (c: Context) => {
   const excludedId = c.req.param("id");
 
-  const umkm = await prisma.$queryRaw<{ id: string; name: string; address: string; phone: string; description: string; status: string; image: string; latitude: number; longitude: number; category: string; jumlahProduk: bigint }[]>`
+  const umkm = await prisma.$queryRaw<{ id: string; name: string; address: string; phone: string; description: string; status: string; image: string; latitude: number; longitude: number; category: string; productCount: bigint }[]>`
     SELECT u.id, u.name, u.address, u.phone, u.description, u.status, u.image, u.latitude, u.longitude,
-      c.name AS category, COUNT(p.id) AS jumlahProduk
+      c.name AS category, COUNT(p.id) AS productCount
     FROM umkm u
     LEFT JOIN product p ON p.umkmId = u.id
     LEFT JOIN category c ON c.id = u.categoryId
@@ -39,14 +39,14 @@ export const getOtherUmkm = async (c: Context) => {
     LIMIT 8
   `;
 
-  const result = umkm.map(u => ({ ...u, jumlahProduk: Number(u.jumlahProduk) }));
+  const result = umkm.map(u => ({ ...u, productCount: Number(u.productCount) }));
   return c.json({ message: "Berhasil mendapatkan preview UMKM!", data: result }, 200);
 };
 
 export const getPreviewUmkm = async (c: Context) => {
-  const umkm = await prisma.$queryRaw<{ id: string; name: string; address: string; phone: string; description: string; status: string; image: string; latitude: number; longitude: number; category: string; jumlahProduk: bigint; hargaTermurah: number | null }[]>`
+  const umkm = await prisma.$queryRaw<{ id: string; name: string; address: string; phone: string; description: string; status: string; image: string; latitude: number; longitude: number; category: string; productCount: bigint; lowestPrice: number | null }[]>`
     SELECT u.id, u.name, u.address, u.phone, u.description, u.status, u.image, u.latitude, u.longitude,
-      c.name AS category, COUNT(p.id) AS jumlahProduk, MIN(p.price) AS hargaTermurah
+      c.name AS category, COUNT(p.id) AS productCount, MIN(p.price) AS lowestPrice
     FROM umkm u
     LEFT JOIN product p ON p.umkmId = u.id
     LEFT JOIN category c ON c.id = u.categoryId
@@ -57,8 +57,8 @@ export const getPreviewUmkm = async (c: Context) => {
 
   const result = umkm.map(u => ({
     ...u,
-    jumlahProduk: Number(u.jumlahProduk),
-    hargaTermurah: u.hargaTermurah !== null ? Number(u.hargaTermurah) : null,
+    productCount: Number(u.productCount),
+    lowestPrice: u.lowestPrice !== null ? Number(u.lowestPrice) : null,
   }));
 
   return c.json({ message: "Berhasil mendapatkan preview UMKM!", data: result }, 200);
@@ -78,9 +78,9 @@ export const getAllUmkm = async (c: Context) => {
       });
       return {
         id: umkm.id, name: umkm.name, image: umkm.image, address: umkm.address,
-        description: umkm.description, jumlahProduk: umkm._count.product,
+        description: umkm.description, productCount: umkm._count.product,
         category: umkm.category.name,
-        hargaTermurah: minPrice._min.price ? Number(minPrice._min.price) : null,
+        lowestPrice: minPrice._min.price ? Number(minPrice._min.price) : null,
       };
     })
   );
@@ -102,8 +102,8 @@ export const getAllUmkmAdmin = async (c: Context) => {
       return {
         id: umkm.id, name: umkm.name, image: umkm.image, address: umkm.address,
         description: umkm.description, status: umkm.status, phone: umkm.phone,
-        jumlahProduk: umkm._count.product, category: umkm.category.name,
-        hargaTermurah: minPrice._min.price ? Number(minPrice._min.price) : null,
+        productCount: umkm._count.product, category: umkm.category.name,
+        lowestPrice: minPrice._min.price ? Number(minPrice._min.price) : null,
       };
     })
   );

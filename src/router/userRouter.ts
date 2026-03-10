@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { login, getUserInfo, updateUser } from "../controller/userController";
-import { verifyToken } from "../middleware/isLogin";
+import { verifyToken } from "../middleware/auth";
 
 const userRouter = new Hono()
 
