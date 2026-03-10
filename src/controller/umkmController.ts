@@ -1,16 +1,21 @@
-import { Context } from "hono";
-import prisma from "../prisma/prisma";
-import { uploadToStorage, deleteFromStorage } from "../utils/storage";
-import { AppError } from "../middleware/errorHandler";
-import { umkmSchema, productSchema, updateProductSchema, categorySchema } from "../schemas";
+import { Context } from 'hono';
+import prisma from '../prisma/prisma';
+import { uploadToStorage, deleteFromStorage } from '../utils/storage';
+import { AppError } from '../middleware/errorHandler';
+import { umkmSchema, productSchema, updateProductSchema, categorySchema } from '../schemas';
 
 export const registerUMKM = async (c: Context) => {
   const body = await c.req.parseBody();
   const file = body['image'] as File;
   const parsed = await umkmSchema.parseAsync({
-    name: body['name'], address: body['address'], phone: body['phone'],
-    description: body['description'], status: body['status'],
-    categoryId: body['categoryId'], latitude: body['latitude'], longitude: body['longitude'],
+    name: body['name'],
+    address: body['address'],
+    phone: body['phone'],
+    description: body['description'],
+    status: body['status'],
+    categoryId: body['categoryId'],
+    latitude: body['latitude'],
+    longitude: body['longitude'],
   });
 
   if (!file) throw new AppError(400, 'File gambar UMKM tidak ada!');
@@ -21,13 +26,27 @@ export const registerUMKM = async (c: Context) => {
     data: { id: crypto.randomUUID(), ...parsed, image: imageUrl },
   });
 
-  return c.json({ message: "UMKM berhasil didaftarkan!", data: umkm }, 200);
-}
+  return c.json({ message: 'UMKM berhasil didaftarkan!', data: umkm }, 200);
+};
 
 export const getOtherUmkm = async (c: Context) => {
-  const excludedId = c.req.param("id");
+  const excludedId = c.req.param('id');
 
-  const umkm = await prisma.$queryRaw<{ id: string; name: string; address: string; phone: string; description: string; status: string; image: string; latitude: number; longitude: number; category: string; productCount: bigint }[]>`
+  const umkm = await prisma.$queryRaw<
+    {
+      id: string;
+      name: string;
+      address: string;
+      phone: string;
+      description: string;
+      status: string;
+      image: string;
+      latitude: number;
+      longitude: number;
+      category: string;
+      productCount: bigint;
+    }[]
+  >`
     SELECT u.id, u.name, u.address, u.phone, u.description, u.status, u.image, u.latitude, u.longitude,
       c.name AS category, COUNT(p.id) AS productCount
     FROM umkm u
@@ -39,12 +58,27 @@ export const getOtherUmkm = async (c: Context) => {
     LIMIT 8
   `;
 
-  const result = umkm.map(u => ({ ...u, productCount: Number(u.productCount) }));
-  return c.json({ message: "Berhasil mendapatkan preview UMKM!", data: result }, 200);
+  const result = umkm.map((u) => ({ ...u, productCount: Number(u.productCount) }));
+  return c.json({ message: 'Berhasil mendapatkan preview UMKM!', data: result }, 200);
 };
 
 export const getPreviewUmkm = async (c: Context) => {
-  const umkm = await prisma.$queryRaw<{ id: string; name: string; address: string; phone: string; description: string; status: string; image: string; latitude: number; longitude: number; category: string; productCount: bigint; lowestPrice: number | null }[]>`
+  const umkm = await prisma.$queryRaw<
+    {
+      id: string;
+      name: string;
+      address: string;
+      phone: string;
+      description: string;
+      status: string;
+      image: string;
+      latitude: number;
+      longitude: number;
+      category: string;
+      productCount: bigint;
+      lowestPrice: number | null;
+    }[]
+  >`
     SELECT u.id, u.name, u.address, u.phone, u.description, u.status, u.image, u.latitude, u.longitude,
       c.name AS category, COUNT(p.id) AS productCount, MIN(p.price) AS lowestPrice
     FROM umkm u
@@ -55,13 +89,13 @@ export const getPreviewUmkm = async (c: Context) => {
     LIMIT 4
   `;
 
-  const result = umkm.map(u => ({
+  const result = umkm.map((u) => ({
     ...u,
     productCount: Number(u.productCount),
     lowestPrice: u.lowestPrice !== null ? Number(u.lowestPrice) : null,
   }));
 
-  return c.json({ message: "Berhasil mendapatkan preview UMKM!", data: result }, 200);
+  return c.json({ message: 'Berhasil mendapatkan preview UMKM!', data: result }, 200);
 };
 
 export const getAllUmkm = async (c: Context) => {
@@ -77,15 +111,19 @@ export const getAllUmkm = async (c: Context) => {
         _min: { price: true },
       });
       return {
-        id: umkm.id, name: umkm.name, image: umkm.image, address: umkm.address,
-        description: umkm.description, productCount: umkm._count.product,
+        id: umkm.id,
+        name: umkm.name,
+        image: umkm.image,
+        address: umkm.address,
+        description: umkm.description,
+        productCount: umkm._count.product,
         category: umkm.category.name,
         lowestPrice: minPrice._min.price ? Number(minPrice._min.price) : null,
       };
-    })
+    }),
   );
 
-  return c.json({ message: "Berhasil mendapatkan seluruh data UMKM!", data: result }, 200);
+  return c.json({ message: 'Berhasil mendapatkan seluruh data UMKM!', data: result }, 200);
 };
 
 export const getAllUmkmAdmin = async (c: Context) => {
@@ -100,19 +138,28 @@ export const getAllUmkmAdmin = async (c: Context) => {
         _min: { price: true },
       });
       return {
-        id: umkm.id, name: umkm.name, image: umkm.image, address: umkm.address,
-        description: umkm.description, status: umkm.status, phone: umkm.phone,
-        productCount: umkm._count.product, category: umkm.category.name,
+        id: umkm.id,
+        name: umkm.name,
+        image: umkm.image,
+        address: umkm.address,
+        description: umkm.description,
+        status: umkm.status,
+        phone: umkm.phone,
+        productCount: umkm._count.product,
+        category: umkm.category.name,
         lowestPrice: minPrice._min.price ? Number(minPrice._min.price) : null,
       };
-    })
+    }),
   );
 
-  return c.json({ message: "Berhasil mendapatkan seluruh data UMKM untuk admin!", data: result }, 200);
+  return c.json(
+    { message: 'Berhasil mendapatkan seluruh data UMKM untuk admin!', data: result },
+    200,
+  );
 };
 
 export const deleteUMKM = async (c: Context) => {
-  const id = c.req.param("id");
+  const id = c.req.param('id');
 
   const existingUmkm = await prisma.umkm.findUnique({
     where: { id },
@@ -122,12 +169,16 @@ export const deleteUMKM = async (c: Context) => {
   if (!existingUmkm) throw new AppError(404, 'UMKM tidak ditemukan!');
 
   if (existingUmkm.image) {
-    try { await deleteFromStorage(existingUmkm.image); } catch {}
+    try {
+      await deleteFromStorage(existingUmkm.image);
+    } catch {}
   }
 
   for (const product of existingUmkm.product) {
     if (product.image) {
-      try { await deleteFromStorage(product.image); } catch {}
+      try {
+        await deleteFromStorage(product.image);
+      } catch {}
     }
   }
 
@@ -136,23 +187,23 @@ export const deleteUMKM = async (c: Context) => {
   }
 
   await prisma.umkm.delete({ where: { id } });
-  return c.json({ message: "UMKM berhasil dihapus!" }, 200);
-}
+  return c.json({ message: 'UMKM berhasil dihapus!' }, 200);
+};
 
 export const approveUMKM = async (c: Context) => {
-  const id = c.req.param("id");
+  const id = c.req.param('id');
 
   const umkm = await prisma.umkm.update({
     where: { id },
     data: { status: 'active' },
   });
 
-  return c.json({ message: "UMKM berhasil disetujui!", data: umkm }, 200);
-}
+  return c.json({ message: 'UMKM berhasil disetujui!', data: umkm }, 200);
+};
 
 export const getAllCategory = async (c: Context) => {
   const categories = await prisma.category.findMany();
-  return c.json({ message: "Berhasil mendapatkan seluruh kategori!", data: categories }, 200);
+  return c.json({ message: 'Berhasil mendapatkan seluruh kategori!', data: categories }, 200);
 };
 
 export const addCategory = async (c: Context) => {
@@ -166,11 +217,11 @@ export const addCategory = async (c: Context) => {
     data: { id: crypto.randomUUID(), name: parsed.name },
   });
 
-  return c.json({ message: "Kategori berhasil ditambahkan!", data: category }, 201);
+  return c.json({ message: 'Kategori berhasil ditambahkan!', data: category }, 201);
 };
 
 export const deleteCategory = async (c: Context) => {
-  const id = c.req.param("id");
+  const id = c.req.param('id');
 
   const existingCategory = await prisma.category.findUnique({
     where: { id },
@@ -180,31 +231,36 @@ export const deleteCategory = async (c: Context) => {
   if (!existingCategory) throw new AppError(404, 'Kategori tidak ditemukan!');
 
   if (existingCategory.umkm.length > 0) {
-    throw new AppError(400, `Kategori "${existingCategory.name}" tidak dapat dihapus karena masih digunakan oleh ${existingCategory.umkm.length} UMKM!`);
+    throw new AppError(
+      400,
+      `Kategori "${existingCategory.name}" tidak dapat dihapus karena masih digunakan oleh ${existingCategory.umkm.length} UMKM!`,
+    );
   }
 
   await prisma.category.delete({ where: { id } });
-  return c.json({ message: "Kategori berhasil dihapus!" }, 200);
+  return c.json({ message: 'Kategori berhasil dihapus!' }, 200);
 };
 
 export const getDetailUmkm = async (c: Context) => {
-  const id = c.req.param("id");
+  const id = c.req.param('id');
 
   const umkm = await prisma.umkm.findUnique({
     where: { id },
     include: { category: { select: { name: true } }, product: true },
   });
 
-  if (!umkm) throw new AppError(404, "UMKM tidak ditemukan");
+  if (!umkm) throw new AppError(404, 'UMKM tidak ditemukan');
 
-  return c.json({ message: "Berhasil mendapatkan produk untuk UMKM!", data: umkm }, 200);
+  return c.json({ message: 'Berhasil mendapatkan produk untuk UMKM!', data: umkm }, 200);
 };
 
 export const uploadProduct = async (c: Context) => {
   const body = await c.req.parseBody();
   const parsed = await productSchema.parseAsync({
-    umkmId: body['umkmId'], name: body['name'],
-    description: body['description'], price: body['price'],
+    umkmId: body['umkmId'],
+    name: body['name'],
+    description: body['description'],
+    price: body['price'],
   });
 
   let imageUrl = null;
@@ -213,23 +269,35 @@ export const uploadProduct = async (c: Context) => {
   }
 
   const product = await prisma.product.create({
-    data: { id: crypto.randomUUID(), name: parsed.name, description: parsed.description, image: imageUrl, price: parsed.price, umkmId: parsed.umkmId },
+    data: {
+      id: crypto.randomUUID(),
+      name: parsed.name,
+      description: parsed.description,
+      image: imageUrl,
+      price: parsed.price,
+      umkmId: parsed.umkmId,
+    },
   });
 
   return c.json({ message: 'Produk berhasil diupload!', data: product }, 200);
-}
+};
 
 export const updateUMKM = async (c: Context) => {
-  const id = c.req.param("id");
+  const id = c.req.param('id');
   const body = await c.req.parseBody();
 
   const existingUmkm = await prisma.umkm.findUnique({ where: { id }, include: { product: true } });
   if (!existingUmkm) throw new AppError(404, 'UMKM tidak ditemukan!');
 
   const parsed = await umkmSchema.parseAsync({
-    name: body['name'], address: body['address'], phone: body['phone'],
-    description: body['description'], status: existingUmkm.status,
-    categoryId: body['categoryId'], latitude: body['latitude'], longitude: body['longitude'],
+    name: body['name'],
+    address: body['address'],
+    phone: body['phone'],
+    description: body['description'],
+    status: existingUmkm.status,
+    categoryId: body['categoryId'],
+    latitude: body['latitude'],
+    longitude: body['longitude'],
   });
 
   const file = body['image'] as File;
@@ -237,7 +305,9 @@ export const updateUMKM = async (c: Context) => {
 
   if (file && file instanceof File) {
     if (existingUmkm.image) {
-      try { await deleteFromStorage(existingUmkm.image); } catch {}
+      try {
+        await deleteFromStorage(existingUmkm.image);
+      } catch {}
     }
     imageUrl = await uploadToStorage(file);
   }
@@ -247,18 +317,20 @@ export const updateUMKM = async (c: Context) => {
     data: { ...parsed, image: imageUrl },
   });
 
-  return c.json({ message: "UMKM berhasil diperbarui!", data: updatedUmkm }, 200);
-}
+  return c.json({ message: 'UMKM berhasil diperbarui!', data: updatedUmkm }, 200);
+};
 
 export const updateProduct = async (c: Context) => {
-  const id = c.req.param("id");
+  const id = c.req.param('id');
   const body = await c.req.parseBody();
 
   const existingProduct = await prisma.product.findUnique({ where: { id } });
   if (!existingProduct) throw new AppError(404, 'Produk tidak ditemukan!');
 
   const parsed = await updateProductSchema.parseAsync({
-    name: body['name'], description: body['description'], price: body['price'],
+    name: body['name'],
+    description: body['description'],
+    price: body['price'],
   });
 
   const file = body['image'] as File;
@@ -266,15 +338,22 @@ export const updateProduct = async (c: Context) => {
 
   if (file && file instanceof File) {
     if (existingProduct.image) {
-      try { await deleteFromStorage(existingProduct.image); } catch {}
+      try {
+        await deleteFromStorage(existingProduct.image);
+      } catch {}
     }
     imageUrl = await uploadToStorage(file);
   }
 
   const updatedProduct = await prisma.product.update({
     where: { id },
-    data: { name: parsed.name, description: parsed.description, price: parsed.price, image: imageUrl },
+    data: {
+      name: parsed.name,
+      description: parsed.description,
+      price: parsed.price,
+      image: imageUrl,
+    },
   });
 
-  return c.json({ message: "Produk berhasil diperbarui!", data: updatedProduct }, 200);
-}
+  return c.json({ message: 'Produk berhasil diperbarui!', data: updatedProduct }, 200);
+};

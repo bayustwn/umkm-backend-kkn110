@@ -1,8 +1,8 @@
-import { Hono } from "hono";
-import { getDashboard } from "../controller/dashboardController";
+import { Hono } from 'hono';
+import { getDashboard } from '../controller/dashboardController';
 
-const dashboardRouter = new Hono()
+const dashboardRouter = new Hono();
 
-dashboardRouter.get("/", getDashboard)
+dashboardRouter.get('/', getDashboard);
 
 export default dashboardRouter;
